@@ -32,7 +32,6 @@ from uuid import UUID, uuid4
 
 import numpy as np
 from pypdf import PdfReader
-from sentence_transformers import SentenceTransformer
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from openai import AsyncAzureOpenAI
@@ -60,9 +59,11 @@ def get_embedding_model():
     global embedding_model
 
     if embedding_model is None:
+        from sentence_transformers import SentenceTransformer
+
         logger.info("Loading HuggingFace embedding model...")
         embedding_model = SentenceTransformer("all-MiniLM-L6-v2")
-        logger.info("✅ Embedding model loaded")
+        logger.info("Embedding model loaded")
 
     return embedding_model
 

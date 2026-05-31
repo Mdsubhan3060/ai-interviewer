@@ -1,26 +1,17 @@
-# backend/main.py — FIXED VERSION
-# Changes: added audio_router registration
+from contextlib import asynccontextmanager
+import logging
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from contextlib import asynccontextmanager
-import logging
-print("STEP A - main.py started")
 
 from core.config import settings
-print("STEP B - config imported")
 from db.session import init_db
-print("STEP C - db.session imported")
 from api.auth import router as auth_router
-print("STEP D - auth_router imported")
-# from api import (
-#     resume_router,
-#     job_router,
-#     interview_router,
-#     dashboard_router,
-#     auth_router,
-#     audio_router,
-# )
+from api.resume import router as resume_router
+from api.job import router as job_router
+from api.interview import router as interview_router
+from api.dashboard import router as dashboard_router
+from api.audio import router as audio_router
 
 logging.basicConfig(
     level=logging.DEBUG if settings.DEBUG else logging.INFO,
@@ -28,19 +19,16 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    logger.info(f"🚀 Starting {settings.APP_NAME} in {settings.APP_ENV} mode")
-
-    logger.info("STEP 1: About to connect DB")
+    logger.info("Starting %s in %s mode", settings.APP_NAME, settings.APP_ENV)
     await init_db()
-    logger.info("STEP 2: DB connection completed")
-
-    logger.info("✅ Database connected")
-
+    logger.info("Database connected")
     yield
+    logger.info("Shutting down gracefully")
 
-    logger.info("👋 Shutting down gracefully")
+
 app = FastAPI(
     title=settings.APP_NAME,
     description="AI-powered job matching and adaptive mock interview coaching",
@@ -59,13 +47,14 @@ app.add_middleware(
 )
 
 API_PREFIX = "/api/v1"
-app.include_router(auth_router, prefix=f"{API_PREFIX}/auth", tags=["Auth"])
 
-# app.include_router(resume_router, prefix=f"{API_PREFIX}/resume", tags=["Resume"])
-# app.include_router(job_router, prefix=f"{API_PREFIX}/job", tags=["Job"])
-# app.include_router(interview_router, prefix=f"{API_PREFIX}/interview", tags=["Interview"])
-# app.include_router(dashboard_router, prefix=f"{API_PREFIX}/dashboard", tags=["Dashboard"])
-# app.include_router(audio_router, prefix=f"{API_PREFIX}/audio", tags=["Audio"])
+app.include_router(auth_router, prefix=f"{API_PREFIX}/auth", tags=["Auth"])
+app.include_router(resume_router, prefix=f"{API_PREFIX}/resume", tags=["Resume"])
+app.include_router(job_router, prefix=f"{API_PREFIX}/job", tags=["Job"])
+app.include_router(interview_router, prefix=f"{API_PREFIX}/interview", tags=["Interview"])
+app.include_router(dashboard_router, prefix=f"{API_PREFIX}/dashboard", tags=["Dashboard"])
+app.include_router(audio_router, prefix=f"{API_PREFIX}/audio", tags=["Audio"])
+
 
 @app.get("/health", tags=["Health"])
 async def health_check():

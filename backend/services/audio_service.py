@@ -32,35 +32,30 @@ import tempfile
 import time
 from pathlib import Path
 
-import whisper
 from pydub import AudioSegment
 
 logger = logging.getLogger(__name__)
 
 # ============================================
-# Load Whisper Model Once
+# Whisper Model (lazy loaded)
 # ============================================
-# Just like HuggingFace in resume_service.py,
-# we load Whisper ONCE at startup.
-#
-# Model sizes and tradeoffs:
-#   tiny   → fastest, least accurate (~1GB RAM)
-#   base   → good balance (we use this) (~1GB RAM)
-#   small  → better accuracy (~2GB RAM)
-#   medium → even better (~5GB RAM)
-#   large  → best accuracy (~10GB RAM)
-#
-# "base" is perfect for interview answers:
-# - Fast enough for real-time feel
-# - Accurate enough for clear speech
+# Do not load Whisper at module import time. Render needs the app to bind
+# to PORT quickly; the model should load only when audio transcription is used.
 # ============================================
-logger.info("Loading Whisper model (base)...")
-try:
-    whisper_model = whisper.load_model("base")
-    logger.info("✅ Whisper model loaded")
-except Exception as e:
-    logger.error(f"Failed to load Whisper: {e}")
-    whisper_model = None
+whisper_model = None
+
+
+def get_whisper_model():
+    global whisper_model
+
+    if whisper_model is None:
+        import whisper
+
+        logger.info("Loading Whisper model (base)...")
+        whisper_model = whisper.load_model("base")
+        logger.info("Whisper model loaded")
+
+    return whisper_model
 
 
 # ============================================
@@ -174,11 +169,7 @@ def transcribe_audio(file_bytes: bytes) -> dict:
             duration: audio duration in seconds
             language: detected language
     """
-    if whisper_model is None:
-        raise RuntimeError(
-            "Whisper model not loaded. "
-            "Run: pip install openai-whisper"
-        )
+    model = get_whisper_model()
 
     # Write to temp file
     with tempfile.NamedTemporaryFile(suffix=".mp3", delete=False) as tmp:
@@ -189,7 +180,7 @@ def transcribe_audio(file_bytes: bytes) -> dict:
         start_time = time.time()
 
         # Transcribe
-        result = whisper_model.transcribe(
+        result = model.transcribe(
             tmp_path,
             language="en",          # Force English (faster than auto-detect)
             fp16=False,             # Use fp32 (safer on CPU)
