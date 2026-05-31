@@ -47,23 +47,24 @@ from db.models.user import User
 logger = logging.getLogger(__name__)
 
 # ============================================
-# HuggingFace Model (loaded ONCE at startup)
+# HuggingFace Model (lazy loaded)
 # ============================================
-# Loading this model takes ~3 seconds and ~80MB RAM.
-# We load it ONCE when the module is first imported,
-# then reuse it for every request.
-#
-# If we loaded it per-request:
-#   → 3 second delay on every resume upload
-#   → terrible user experience
-#
-# Loading once at module level:
-#   → 3 second delay only at server startup
-#   → instant for every request after
+# The model is intentionally not loaded at module import time.
+# FastAPI startup stays lightweight, and the model loads only when
+# a resume-processing flow actually needs an embedding.
 # ============================================
-logger.info("Loading HuggingFace embedding model...")
-embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
-logger.info("✅ Embedding model loaded")
+embedding_model = None
+
+
+def get_embedding_model():
+    global embedding_model
+
+    if embedding_model is None:
+        logger.info("Loading HuggingFace embedding model...")
+        embedding_model = SentenceTransformer("all-MiniLM-L6-v2")
+        logger.info("✅ Embedding model loaded")
+
+    return embedding_model
 
 # ============================================
 # Azure OpenAI Client
@@ -362,7 +363,7 @@ def generate_embedding(text: str) -> list[float]:
     Returns:
         List of 384 floats
     """
-    embedding = embedding_model.encode(text, convert_to_numpy=True)
+    embedding = get_embedding_model().encode(text, convert_to_numpy=True)
     return embedding.tolist()  # Convert numpy array to Python list for JSON storage
 
 
