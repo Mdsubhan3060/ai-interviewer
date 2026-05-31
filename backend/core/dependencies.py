@@ -10,7 +10,7 @@ from uuid import UUID
 from typing import Optional
 
 import httpx
-import jwt
+from jose import jwt
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy import select
