@@ -5,18 +5,22 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 import logging
+print("STEP A - main.py started")
 
 from core.config import settings
+print("STEP B - config imported")
 from db.session import init_db
-
-from api import (
-    resume_router,
-    job_router,
-    interview_router,
-    dashboard_router,
-    auth_router,
-    audio_router,
-)
+print("STEP C - db.session imported")
+from api import auth_router
+print("STEP D - auth_router imported")
+# from api import (
+#     resume_router,
+#     job_router,
+#     interview_router,
+#     dashboard_router,
+#     auth_router,
+#     audio_router,
+# )
 
 logging.basicConfig(
     level=logging.DEBUG if settings.DEBUG else logging.INFO,
@@ -55,14 +59,13 @@ app.add_middleware(
 )
 
 API_PREFIX = "/api/v1"
+app.include_router(auth_router, prefix=f"{API_PREFIX}/auth", tags=["Auth"])
 
-app.include_router(auth_router,      prefix=f"{API_PREFIX}/auth",      tags=["Auth"])
-app.include_router(resume_router,    prefix=f"{API_PREFIX}/resume",    tags=["Resume"])
-app.include_router(job_router,       prefix=f"{API_PREFIX}/job",       tags=["Job"])
-app.include_router(interview_router, prefix=f"{API_PREFIX}/interview", tags=["Interview"])
-app.include_router(dashboard_router, prefix=f"{API_PREFIX}/dashboard", tags=["Dashboard"])
-app.include_router(audio_router,     prefix=f"{API_PREFIX}/audio",     tags=["Audio"])
-
+# app.include_router(resume_router, prefix=f"{API_PREFIX}/resume", tags=["Resume"])
+# app.include_router(job_router, prefix=f"{API_PREFIX}/job", tags=["Job"])
+# app.include_router(interview_router, prefix=f"{API_PREFIX}/interview", tags=["Interview"])
+# app.include_router(dashboard_router, prefix=f"{API_PREFIX}/dashboard", tags=["Dashboard"])
+# app.include_router(audio_router, prefix=f"{API_PREFIX}/audio", tags=["Audio"])
 
 @app.get("/health", tags=["Health"])
 async def health_check():
