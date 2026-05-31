@@ -24,16 +24,19 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info(f"🚀 Starting {settings.APP_NAME} in {settings.APP_ENV} mode")
+
+    logger.info("STEP 1: About to connect DB")
     await init_db()
+    logger.info("STEP 2: DB connection completed")
+
     logger.info("✅ Database connected")
+
     yield
+
     logger.info("👋 Shutting down gracefully")
-
-
 app = FastAPI(
     title=settings.APP_NAME,
     description="AI-powered job matching and adaptive mock interview coaching",
