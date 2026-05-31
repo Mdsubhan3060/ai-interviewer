@@ -1,0 +1,58 @@
+# ============================================
+# AI Job Hunter - Backend Dependencies
+# ============================================
+
+# --- Web Framework ---
+fastapi==0.111.0          # Our API framework (like Express but Python)
+uvicorn[standard]==0.29.0  # Server that runs FastAPI (like Node for Express)
+python-multipart==0.0.9   # Needed to accept file uploads (resume PDFs)
+
+# --- Database ---
+sqlalchemy==2.0.30         # ORM - lets us write Python instead of raw SQL
+alembic==1.13.1            # Handles DB migrations (schema changes over time)
+asyncpg==0.29.0            # Fast async PostgreSQL driver
+psycopg2-binary==2.9.9    # Standard PostgreSQL driver (fallback)
+
+# --- AI / Azure OpenAI ---
+openai==1.30.1             # Azure OpenAI SDK (same package, different config)
+tiktoken==0.7.0            # Counts tokens before sending to GPT (cost control)
+
+# --- PDF Processing ---
+pypdf==4.2.0               # Extracts text from uploaded resume PDFs
+pdfplumber==0.11.1         # Better table extraction from PDFs
+
+# --- Audio Processing ---
+  # Speech-to-text for mock interview audio input
+pydub==0.25.1              # Audio file compression (keeps files under 25MB limit)
+soundfile==0.12.1          # Audio file reading/writing
+
+# --- Text / NLP ---
+sentence-transformers==3.0.1  # Creates embeddings for job matching similarity
+numpy==1.26.4              # Math operations for similarity scores
+scikit-learn==1.5.0        # Cosine similarity calculation
+
+# --- Authentication ---
+python-jose[cryptography]==3.3.0  # JWT token verification (from Supabase Auth)
+passlib[bcrypt]==1.7.4            # Password hashing (backup auth)
+
+# --- Azure Storage ---
+azure-storage-blob==12.20.0  # Upload/download resume PDFs to Azure Blob
+
+# --- Configuration ---
+pydantic==2.7.1            # Data validation (FastAPI uses this heavily)
+pydantic-settings==2.3.0   # Loads .env file into typed Python config
+python-dotenv==1.0.1       # Reads .env file
+
+# --- HTTP Client ---
+httpx==0.27.0              # Async HTTP client (for calling external APIs)
+
+# --- Utilities ---
+python-slugify==8.0.4      # Creates URL-safe strings
+uuid==1.30                 # Generates unique IDs
+python-dateutil==2.9.0    # Date parsing utilities
+
+# --- Testing ---
+pytest==8.2.0              # Test runner
+pytest-asyncio==0.23.7    # Async test support
+httpx==0.27.0              # Test API endpoints
+factory-boy==3.3.0         # Create fake DB objects for tests

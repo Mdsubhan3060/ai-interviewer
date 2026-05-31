@@ -1,0 +1,79 @@
+# ============================================
+# .gitignore - Files NEVER committed to git
+# ============================================
+# MOST IMPORTANT: .env files contain API keys.
+# If you commit .env, your Azure OpenAI key is PUBLIC.
+# Someone WILL find it and use it. You WILL get a $10,000 bill.
+# ============================================
+
+# === SECRET FILES - NEVER COMMIT ===
+.env
+.env.local
+.env.production
+*.env
+backend/.env
+
+# === Python ===
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+.venv/
+ENV/
+*.egg-info/
+dist/
+build/
+.eggs/
+*.egg
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+
+# === Database ===
+*.db
+*.sqlite
+*.sqlite3
+
+# === Node / React ===
+node_modules/
+frontend/dist/
+frontend/build/
+.npm
+*.log
+npm-debug.log*
+
+# === Audio files (test files, don't commit) ===
+*.wav
+*.mp3
+*.m4a
+*.ogg
+*.webm
+
+# === PDF test files ===
+test_*.pdf
+sample_*.pdf
+
+# === IDE ===
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# === Azure ===
+.azure/
+local.settings.json
+
+# === Logs ===
+logs/
+*.log
+
+frontend/.env
+backend/venv/
+*.zip
