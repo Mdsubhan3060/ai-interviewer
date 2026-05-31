@@ -11,7 +11,7 @@ from core.config import settings
 print("STEP B - config imported")
 from db.session import init_db
 print("STEP C - db.session imported")
-from api import auth_router
+from api.auth import router as auth_router
 print("STEP D - auth_router imported")
 # from api import (
 #     resume_router,
