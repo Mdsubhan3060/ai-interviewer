@@ -46,28 +46,6 @@ from db.models.user import User
 logger = logging.getLogger(__name__)
 
 # ============================================
-# HuggingFace Model (lazy loaded)
-# ============================================
-# The model is intentionally not loaded at module import time.
-# FastAPI startup stays lightweight, and the model loads only when
-# a resume-processing flow actually needs an embedding.
-# ============================================
-embedding_model = None
-
-
-def get_embedding_model():
-    global embedding_model
-
-    if embedding_model is None:
-        from sentence_transformers import SentenceTransformer
-
-        logger.info("Loading HuggingFace embedding model...")
-        embedding_model = SentenceTransformer("all-MiniLM-L6-v2")
-        logger.info("Embedding model loaded")
-
-    return embedding_model
-
-# ============================================
 # Azure OpenAI Client
 # ============================================
 # We use GPT only for the PARSING step
@@ -335,37 +313,15 @@ RESUME TEXT:
 
 
 # ============================================
-# FUNCTION 4: Generate HuggingFace Embedding
+# FUNCTION 4: Generate Azure OpenAI Embedding
 # ============================================
-def generate_embedding(text: str) -> list[float]:
-    """
-    Convert text to a list of 384 numbers (embedding vector).
-
-    What is an embedding?
-    It's a way to represent text as numbers so we can
-    mathematically compare how similar two texts are.
-
-    Example:
-        "Python developer with Django experience"
-        → [0.023, -0.156, 0.891, 0.445, ...]  (384 numbers)
-
-        "Looking for Python backend engineer"
-        → [0.019, -0.143, 0.876, 0.421, ...]  (384 numbers)
-
-    These two are SIMILAR so their numbers are CLOSE.
-    We use this in Step 4 (job matching) to calculate
-    how similar a resume is to a job description.
-
-    Runs locally, no API call, no cost, no internet needed.
-
-    Args:
-        text: Any text string to embed
-
-    Returns:
-        List of 384 floats
-    """
-    embedding = get_embedding_model().encode(text, convert_to_numpy=True)
-    return embedding.tolist()  # Convert numpy array to Python list for JSON storage
+async def generate_embedding(text: str) -> list[float]:
+    """Generate an embedding with Azure OpenAI instead of loading local ML models."""
+    response = await openai_client.embeddings.create(
+        model=settings.AZURE_OPENAI_EMBEDDING_DEPLOYMENT,
+        input=text[:8000],
+    )
+    return response.data[0].embedding
 
 
 # ============================================
@@ -410,11 +366,11 @@ async def save_resume(
     parsed_data = await parse_resume_with_gpt(raw_text)
 
     # ---- Step 4: Generate Embedding ----
-    logger.info("Generating HuggingFace embedding...")
+    logger.info("Generating Azure OpenAI embedding...")
     # We embed skills + experience summary for best matching results
     skills_text = " ".join(parsed_data.get("skills", []))
     embed_text = f"{skills_text} {parsed_data.get('summary', '')} {raw_text[:500]}"
-    embedding = generate_embedding(embed_text)
+    embedding = await generate_embedding(embed_text)
 
     # ---- Step 5: Deactivate Old Resumes ----
     # We only want ONE active resume per user

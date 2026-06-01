@@ -247,7 +247,7 @@ async def match_job(
 
     Steps:
     1. Get user's active resume
-    2. Embed job description with HuggingFace
+    2. Embed job description with Azure OpenAI
     3. Calculate cosine similarity with resume embedding
     4. Analyze skills with GPT
     5. Calculate final score
@@ -281,7 +281,7 @@ async def match_job(
 
     # ---- Step 2: Embed Job Description ----
     logger.info("Generating job description embedding...")
-    job_embedding = generate_embedding(job_description[:2000])
+    job_embedding = await generate_embedding(job_description[:2000])
 
     # ---- Step 3: Cosine Similarity ----
     similarity = cosine_similarity(resume.embedding, job_embedding)
