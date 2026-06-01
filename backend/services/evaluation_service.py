@@ -27,6 +27,7 @@
 
 import json
 import logging
+import re
 from uuid import UUID
 from typing import Optional
 from sqlalchemy import select
@@ -169,7 +170,68 @@ Difficulty context for {question_difficulty}:
 
 
 # ============================================
-# FUNCTION 2: Fallback Evaluation
+# FUNCTION 2: Validate Answer Quality
+# ============================================
+def is_low_information_answer(answer: str) -> bool:
+    """Return True when an answer is too empty or nonsensical to evaluate with GPT."""
+    cleaned = (answer or "").strip()
+    if not cleaned:
+        return True
+
+    words = re.findall(r"[A-Za-z][A-Za-z0-9+#.\-]*", cleaned)
+    if len(words) < 3:
+        return True
+
+    if len(words) <= 5 and len(cleaned) < 40:
+        return True
+
+    if any(len(word) > 30 for word in words):
+        return True
+
+    alpha_chars = [char.lower() for char in cleaned if char.isalpha()]
+    if len(alpha_chars) < 8:
+        return True
+
+    unique_alpha_ratio = len(set(alpha_chars)) / len(alpha_chars)
+    if len(alpha_chars) >= 60 and unique_alpha_ratio < 0.08:
+        return True
+
+    vowel_ratio = sum(char in "aeiou" for char in alpha_chars) / len(alpha_chars)
+    if vowel_ratio < 0.18 or vowel_ratio > 0.75:
+        return True
+
+    repeated_runs = re.search(r"([a-zA-Z]{2,})\1{2,}", cleaned)
+    if repeated_runs:
+        return True
+
+    return False
+
+
+def _invalid_answer_evaluation() -> dict:
+    """Deterministic low score for empty, random, or non-answer responses."""
+    return {
+        "overall_score": 0.5,
+        "relevance_score": 0.0,
+        "clarity_score": 0.0,
+        "confidence_score": 1.0,
+        "technical_score": 0.0,
+        "strengths": ["No meaningful answer was provided."],
+        "weaknesses": [
+            "The response does not answer the interview question.",
+            "The response appears to be random text or too little information to evaluate.",
+        ],
+        "ideal_answer": (
+            "A strong answer should name a real technical project, describe the ML problem, "
+            "explain the approach and implementation, and clearly discuss trade-offs such as "
+            "accuracy versus latency, model complexity versus maintainability, or cost versus performance."
+        ),
+        "coaching_tip": "Give a concrete project example and explain at least one real technical trade-off you made.",
+        "follow_up_question": "Can you describe a real project you built and one trade-off you had to make?",
+    }
+
+
+# ============================================
+# FUNCTION 3: Fallback Evaluation
 # ============================================
 def _fallback_evaluation(answer: str) -> dict:
     """
@@ -194,7 +256,7 @@ def _fallback_evaluation(answer: str) -> dict:
 
 
 # ============================================
-# FUNCTION 3: Calculate Category Scores
+# FUNCTION 4: Calculate Category Scores
 # ============================================
 def calculate_category_scores(responses: list[Response]) -> dict:
     """
@@ -233,7 +295,7 @@ def calculate_category_scores(responses: list[Response]) -> dict:
 
 
 # ============================================
-# FUNCTION 4: Submit Answer (Main Function)
+# FUNCTION 5: Submit Answer (Main Function)
 # ============================================
 async def submit_answer(
     db: AsyncSession,
@@ -339,15 +401,19 @@ async def submit_answer(
     resume = resume_result.scalar_one_or_none()
     resume_context = resume.raw_text[:300] if resume else ""
 
-    evaluation = await evaluate_answer_with_gpt(
-        question=response.question_text,
-        answer=answer_text,
-        question_category=response.question_category or "technical",
-        question_difficulty=response.question_difficulty or "medium",
-        job_title=session.job_title or user.target_role or "Software Engineer",
-        persona_prompt=persona_prompt,
-        resume_context=resume_context,
-    )
+    if is_low_information_answer(answer_text):
+        logger.info("Skipping GPT evaluation for low-information answer")
+        evaluation = _invalid_answer_evaluation()
+    else:
+        evaluation = await evaluate_answer_with_gpt(
+            question=response.question_text,
+            answer=answer_text,
+            question_category=response.question_category or "technical",
+            question_difficulty=response.question_difficulty or "medium",
+            job_title=session.job_title or user.target_role or "Software Engineer",
+            persona_prompt=persona_prompt,
+            resume_context=resume_context,
+        )
 
     # ---- Step 6: Save Everything To Response Row ----
     response.answer_text = answer_text

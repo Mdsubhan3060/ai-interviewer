@@ -5,7 +5,9 @@
 import pytest
 from services.evaluation_service import (
     _fallback_evaluation,
+    _invalid_answer_evaluation,
     calculate_category_scores,
+    is_low_information_answer,
 )
 from unittest.mock import MagicMock
 
@@ -58,6 +60,34 @@ class TestFallbackEvaluation:
     def test_weaknesses_is_list(self):
         result = _fallback_evaluation("Some answer")
         assert isinstance(result["weaknesses"], list)
+
+
+class TestAnswerQualityValidation:
+
+    def test_random_single_token_rejected(self):
+        answer = "jfiwfwufuiwqbfubwqufbuwiqbfuwgwqbwquwgboqbgbqwbgoqwbobwubgvuobqobguoq"
+        assert is_low_information_answer(answer) is True
+
+    def test_empty_answer_rejected(self):
+        assert is_low_information_answer("") is True
+
+    def test_short_non_answer_rejected(self):
+        assert is_low_information_answer("I don't know") is True
+
+    def test_real_project_answer_allowed(self):
+        answer = (
+            "I built a resume matching system using FastAPI, Azure OpenAI embeddings, "
+            "and PostgreSQL. The main trade-off was using hosted embeddings for reliable "
+            "deployment instead of local HuggingFace models, which reduced memory pressure "
+            "but added API cost."
+        )
+        assert is_low_information_answer(answer) is False
+
+    def test_invalid_answer_scores_are_low(self):
+        result = _invalid_answer_evaluation()
+        assert result["overall_score"] <= 1.0
+        assert result["technical_score"] == 0.0
+        assert "random text" in result["weaknesses"][1]
 
 
 class TestCalculateCategoryScores:
