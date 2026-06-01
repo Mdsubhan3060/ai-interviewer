@@ -22,12 +22,11 @@ pypdf==4.2.0               # Extracts text from uploaded resume PDFs
 pdfplumber==0.11.1         # Better table extraction from PDFs
 
 # --- Audio Processing ---
-  # Speech-to-text for mock interview audio input
+openai-whisper             # Local speech-to-text for mock interview audio input
 pydub==0.25.1              # Audio file compression (keeps files under 25MB limit)
 soundfile==0.12.1          # Audio file reading/writing
 
 # --- Text / NLP ---
-sentence-transformers==3.0.1  # Creates embeddings for job matching similarity
 numpy==1.26.4              # Math operations for similarity scores
 scikit-learn==1.5.0        # Cosine similarity calculation
 
